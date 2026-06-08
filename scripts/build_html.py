@@ -34,10 +34,12 @@ CONFIG = {
     "upstream_url": "https://github.com/openai/privacy-filter",
     "hero_title": "OPF 日本語適用性 実証実験 — 評価レポート",
     "pages": [
-        {"md": "REPORT.md", "out": "index.html", "key": "report", "nav": "📄 評価レポート",
-         "subtitle": "OpenAI Privacy Filter の日本語PII検出・段階的な数値検証"},
-        {"md": "EXPERIMENTS.md", "out": "experiments.html", "key": "experiments", "nav": "🧪 追加実験",
-         "subtitle": "本体レポートの発見を深掘りする追加実験"},
+        {"md": "REPORT.md", "out": "index.html", "key": "report", "nav": "📄 サマリ",
+         "subtitle": "OpenAI Privacy Filter の日本語PII検出・段階的な数値検証（要約）"},
+        {"md": "methods/opf.md", "out": "method-opf.html", "key": "opf", "nav": "🅾 OPF",
+         "subtitle": "手法詳細: OpenAI Privacy Filter"},
+        {"md": "methods/ginza.md", "out": "method-ginza.html", "key": "ginza", "nav": "🌿 GiNZA",
+         "subtitle": "手法詳細: GiNZA (ja_ginza)"},
     ],
 }
 # ===================================================================
