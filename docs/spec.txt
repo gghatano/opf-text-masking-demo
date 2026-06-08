@@ -130,7 +130,8 @@ GLiNER
 
 * Precision
 * Recall
-* F1
+
+> F1等の総合指標は**用いない**。見逃し(Recall)と過剰検出(Precision)はコストが非対称のため個別に評価する（2026-06-08改訂 #24）。
 
 ---
 
@@ -188,7 +189,7 @@ PIIでないものをPIIと判定した件数
 
 ### 方法
 
-LoRA Fine-tuning
+Fine-tuning（OPFはLoRA非対応のため full fine-tuning。`opf train --label-space-json` で10ラベルを直接学習 #11）
 
 ---
 
@@ -277,9 +278,11 @@ Privacy Filter
 
 | 項目            |    目標 |
 | ------------- | ----: |
-| PII Recall    | 90%以上 |
+| PII Recall（直接識別子中心） | 90%以上 |
 | PII Precision | 85%以上 |
-| 主要ラベルF1       | 85%以上 |
+| 主要ラベル Recall / Precision | 90% / 85%以上 |
+
+> Recall の主対象は直接識別子(PERSON/ADDRESS/PHONE/EMAIL/DATE/ID)。準識別子(AGE/REGION/OCCUPATION/ORGANIZATION)は参考測定。**F1は用いない**（2026-06-08改訂 #24）。
 
 ---
 
@@ -297,7 +300,7 @@ Privacy Filter
 | リスク        | 対応          |
 | ---------- | ----------- |
 | 日本語性能不足    | 追加学習        |
-| 病院名検出漏れ    | 独自ラベル追加     |
+| 病院名検出漏れ    | ORGANIZATIONで扱い後処理/追加学習で補完(独自施設ラベルは作らない #27) |
 | 自治体固有表現の漏れ | 追加データ作成     |
 | 誤検出増加      | 閾値調整        |
 | 過度な期待      | 人手レビュー前提で運用 |

@@ -89,7 +89,7 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px; color: var(--muted); 
 <li><strong>現在地: Stage 0（環境構築・定性スモーク）完了</strong>。<code>uv</code> で再現可能な環境を確立し、OPF が CPU 実機で動作することを確認 🔎。</li>
 <li><strong>形式的な数値評価（B0/B1/B2）は未測定</strong>。合成評価データ（#5）が揃い次第、§2 を埋める。</li>
 <li>🔎 <strong>素 OPF（定性）</strong>: 氏名・住所・電話・メール・西暦日付は日本語でも検出。<strong>業務ID・施設名・年齢・和暦日付は見逃し</strong> → B1/B2 の伸びしろ。詳細 → <a href="method-opf.html">OPF ページ</a>。</li>
-<li>🔎 <strong>GiNZA 比較（定性）</strong>: GiNZA は<strong>年齢・和暦日付・職業</strong>を拾い（OPFの弱点）、電話/メールは OPF/正規表現が強い。<strong>相補的＝アンサンブル候補</strong>（図1）。詳細 → <a href="method-ginza.html">GiNZA ページ</a>。</li>
+<li>🔎 <strong>GiNZA 比較（定性）</strong>: GiNZA は<strong>年齢・和暦日付・職業</strong>を拾い（OPFの弱点）、電話/メールは OPF/正規表現が強い。<strong>相補的</strong>＝用途で使い分け・B1の正規表現補完の根拠（アンサンブルは今回スコープ外, 図1）。詳細 → <a href="method-ginza.html">GiNZA ページ</a>。</li>
 <li>📘 <strong>確定事実</strong>: OPF は <strong>LoRA 非対応＝フルFT のみ</strong>。10ラベルは <code>--label-space-json</code> で直接学習可。指標は <code>detection.span.*</code>/<code>by_class.&lt;label&gt;.span.*</code> を台帳へ写像 <a href="#ref2">[2]</a>。</li>
 </ul>
 <hr />
@@ -106,16 +106,15 @@ flowchart LR
 <hr />
 <h2 id="2">2. 結果サマリ（数値）</h2>
 <blockquote class="badge-note">
-<p>🔎 <strong>現時点 B0/B1/B2 未測定</strong>（評価データ #5 待ち）。成功基準 [spec §9]: Recall≥90% / Precision≥85% / 主要ラベルF1≥85% / 作業削減率≥50% / 見逃し率≤5%。</p>
+<p>🔎 <strong>現時点 B0/B1/B2 未測定</strong>（評価データ #5 待ち）。成功基準 [spec §9]: Recall≥90% / Precision≥85% / 主要ラベル R≥90%・P≥85% / 作業削減率≥50% / 見逃し率≤5%。<strong>F1（総合指標）は用いない</strong>（見逃しと過剰検出はコスト非対称 #24）。</p>
 </blockquote>
 <table>
 <thead>
 <tr>
 <th>Stage</th>
 <th>説明</th>
-<th style="text-align: right;">Precision</th>
 <th style="text-align: right;">Recall</th>
-<th style="text-align: right;">F1(span)</th>
+<th style="text-align: right;">Precision</th>
 <th style="text-align: right;">漏れ率</th>
 <th style="text-align: right;">誤検出率</th>
 </tr>
@@ -128,7 +127,6 @@ flowchart LR
 <td style="text-align: right;">—</td>
 <td style="text-align: right;">—</td>
 <td style="text-align: right;">—</td>
-<td style="text-align: right;">—</td>
 </tr>
 <tr>
 <td>B1</td>
@@ -137,12 +135,10 @@ flowchart LR
 <td style="text-align: right;">—</td>
 <td style="text-align: right;">—</td>
 <td style="text-align: right;">—</td>
-<td style="text-align: right;">—</td>
 </tr>
 <tr>
 <td>B2</td>
 <td>日本語追加学習</td>
-<td style="text-align: right;">—</td>
 <td style="text-align: right;">—</td>
 <td style="text-align: right;">—</td>
 <td style="text-align: right;">—</td>
@@ -186,7 +182,7 @@ flowchart LR
 </tr>
 </tbody>
 </table>
-<p>🔎 <strong>結論</strong>: 守備範囲が相補的。<strong>OPF（or 正規表現）× GiNZA のアンサンブル</strong>が10ラベルの広いカバレッジに有効と見込まれる（B1/#10 の設計へ反映）。各手法の生データ・型対応は手法ページへ。</p>
+<p>🔎 <strong>結論</strong>: 守備範囲が相補的。構造化PIIは <strong>OPF＋正規表現</strong>(B1)、準識別子は <strong>GiNZA等の日本語NER</strong> が担う——という<strong>用途の使い分け</strong>が有効（アンサンブル＝統合モデルは今回スコープ外 #18）。各手法の生データ・型対応は手法ページへ。</p>
 <p><em>（モデルが揃い次第 <code>figures/model_leaderboard.png</code>＝同一データ・同一指標の数値比較を掲載）</em></p>
 <hr />
 <h2 id="4">4. 制約（要点）</h2>
