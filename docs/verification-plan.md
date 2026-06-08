@@ -21,10 +21,10 @@
 - 全評価実行を `outputs/metrics_ledger.csv` に **1 行追記**（上書き禁止＝履歴保持）。
   列: `run_id, date, stage, model(A/B/C/D), variant, domain(医療/自治体/その他/全体), label, precision, recall, f1, miss_rate, false_pos_rate, latency_ms, seed, note`
 - 図を 3 枚、各 Stage 完了時に再生成：
-  1. `figures/score_progression.png` — Stage 軸（B0→B1→B2）の全体 F1/Recall/誤検出の改善曲線。**これが主役。**
+  1. `figures/score_progression.png` — Stage 軸（B0→B1→B2）の全体 Recall/Precision の改善曲線。**これが主役。**（F1は不使用 #24）
   2. `figures/model_leaderboard.png` — モデル A/B/C/D の横比較バー（同一データ・同一指標）。
-  3. `figures/per_label_f1.png` — 主要ラベル別 F1（PERSON/ADDRESS/ID/ORGANIZATION/AGE）[spec §6]。
-- 成功基準ライン（Recall90%, Precision85%, F1 85%, 見逃し5%, 削減50% [spec §9]）を図に水平線で描き、**達成までの距離**を常に可視化。
+  3. `figures/per_label_pr.png` — 主要ラベル別 Recall/Precision（PERSON/ADDRESS/ID/ORGANIZATION/AGE）[spec §6]。
+- 成功基準ライン（Recall90%, Precision85%, 見逃し5%, 削減50% [spec §9]）を図に水平線で描き、**達成までの距離**を常に可視化。
 
 ---
 
@@ -48,8 +48,8 @@
 
 | 指標 | 定義 | 対応 |
 |---|---|---|
-| Precision / Recall / F1（エンティティ単位） | スパン＋ラベル一致 | spec §6 主指標。成功基準 R≥90/P≥85 |
-| ラベル別 F1 | PERSON/ADDRESS/ID/ORGANIZATION/AGE 等 | spec §6。主要ラベル F1≥85% |
+| Precision / Recall（エンティティ単位, **F1不使用** #24） | スパン一致(IoU≥0.5) | spec §6 主指標。成功基準 R≥90/P≥85 |
+| ラベル別 Recall / Precision | PERSON/ADDRESS/ID/ORGANIZATION/AGE 等 | spec §6。主要ラベル R≥90/P≥85 |
 | 漏れ率(miss_rate) | 未検出 PII 件数 / 全 PII | spec §6。見逃し率≤5% |
 | 誤検出率(false_pos_rate) | 非PIIをPII判定 / 判定総数 | spec §6。閾値調整で管理 |
 | 作業削減率 | (人手単独工数 − 支援併用工数)/人手単独工数 | spec §7-3,§9。≥50% |
@@ -63,12 +63,12 @@
 
 | 区分 | 件数 | 用途 | 方針 |
 |---|---|---|---|
-| 評価セット | 300（医療/自治体/その他 各100）[spec §3.2] | S1/S3 評価 | **合成生成**（テンプレート＋LLM で疑似診療録・相談記録を作り、PII位置を自動ラベル）。実データは使わない |
-| 追加学習セット | 500〜1,000 [spec §7-2] | S2 LoRA | 同上の合成＋アノテーション |
+| 評価セット | 300（医療/自治体/その他 各100）[spec §3.2] | S1/S3 評価 | **合成生成**（テンプレート＋固有名詞置換／Claude Code 生成）。PII位置は生成時に自動ラベル。実データは使わない |
+| 追加学習セット | 500〜1,000 [spec §7-2] | S2 full FT | 同上の合成＋アノテーション |
 | 回帰セット | 評価から凍結 | 劣化検知 | Stage 5 で固定 |
 
 > 🔎 **重要（privacy）**: 匿名化ツールの評価には「PII がどこにあるか」の正解ラベルが要る＝実記録を使うと秘匿対象データを直接扱うことになる。**合成データなら正解ラベルが生成時に得られ、個人情報リスクも無い**ため既定とする。合成の現実性が結果の外的妥当性を左右する点は限界として明記する。
-> アノテーション一貫性は二重付与＋κ係数で確認する小タスクを Stage 1 に置く。
+> 📌 **生成方法（#26 決定）**: フォーマットを定めた文章の固有名詞をルールベース置換、または Claude Code（本エージェント）に合成させる。実データが無いため**疑似値の実在エンティティ衝突回避は今回不要**（実データ利用時は実在個人との衝突を避ける）。アノテーション規約は #29（敬称除外／完全住所=ADDRESS・地名単独=REGION／一致 IoU≥0.5）。
 
 ---
 
@@ -87,12 +87,12 @@
 
 ### Stage 2 — ベースライン **B0**（シナリオ1 [spec §7-1]）
 - OPF 素モデル・既定設定で 300 件評価。ドメイン別・ラベル別に台帳記録。
-- ゲート: 全体／ドメイン別／主要ラベル別の P/R/F1・漏れ・誤検出が揃う。
+- ゲート: 全体／ドメイン別／主要ラベル別の P/R・漏れ・誤検出が揃う。
 - 期待: 🔎 全体 recall は低め（ID・準識別子(AGE/ORGANIZATION等)が素では出ない）。**これが基準点。**
 
 ### Stage 3 — 後処理・閾値チューニング **B1**
 - 構造化PII（PHONE/EMAIL/各種ID）への正規表現フォールバック、日本語表記ゆれ対応、閾値調整で誤検出抑制 [spec §10]。
-- ゲート: **全体 F1・recall が B0 を上回り**、誤検出率が許容内。
+- ゲート: **全体 Recall・Precision が B0 を上回り**、誤検出率が許容内。
 - 期待: 🔎 ID（番号類）の recall が正規表現で回収され全体が一段改善。
 
 ### Stage 4 — 多モデル比較（GiNZA から）
@@ -105,13 +105,13 @@
 - 学習データを `opf` の JSONL スキーマ（`{"text":..., "label":[{"category","start","end"}]}`、**文字オフセット** [\[5\]](#ref5)）で 500〜1,000 件用意。`--label-space-json` に10ラベルの `span_class_names`（先頭 `O`）を定義。
 - `opf train train.jsonl --validation-dataset val.jsonl --label-space-json labels.json --checkpoint <base> --output-dir <ft>` で学習 [\[5\]](#ref5)。LoRA 対応が確認できればそれを使い、無ければ full FT（モデルは小型なので現実的）。複数 seed で mean±std。回帰セット凍結。
 - before/after は同一 test.jsonl に対し `opf eval --checkpoint <base|ft> --eval-mode typed/untyped --metrics-out *.json` を回し、`detection.span.f1`・`by_class.<label>.span.*` を台帳へ [\[5\]](#ref5)。
-- ゲート: **対象ドメインで全体 F1・recall が B1 を上回る**。成功基準（R≥90/P≥85/主要ラベルF1≥85% [spec §9]）への到達度を測定。
+- ゲート: **対象ドメインで全体 Recall・Precision が B1 を上回る**。成功基準（R≥90/P≥85/主要ラベル R≥90・P≥85 [spec §9]）への到達度を測定。
 - 期待: 🔎 ID・ORGANIZATION で大幅改善。準識別子(AGE/REGION/OCCUPATION)の限界も定量化。
 
 ### Stage 6 — 業務適用評価（シナリオ3 [spec §7-3]・成果物4）
 - 「自由記述→Privacy Filter→候補抽出→作業者レビュー→確定」フローの試作で、**処理時間・修正件数・見逃し件数・作業工数**を測定し **作業削減率**を算出。人手単独を対照に。
 - ゲート: 作業削減率≥50% かつ 見逃し率≤5% [spec §9] の達成度。
-- 期待: 🔎 検出 F1 と工数削減の関係を定量化（本実証の主眼 [spec §12]）。
+- 期待: 🔎 検出 Recall/Precision と工数削減の関係を定量化（本実証の主眼 [spec §12]）。
 
 ### Stage 7 — 総括・ガイドライン・公開（成果物2,5）
 - `REPORT.md` 執筆（課題→仕組み→評価→落とし穴→まとめ）、適用ガイドライン（適用可/困難/要人手/推奨フロー [spec §11-5]）、`build_html.py`→`htmls/`→GitHub Pages 公開。スコア推移図を主要図に。
@@ -125,7 +125,7 @@
 |---|---:|---|
 | PII Recall | ≥90% | Stage 5 (B2) |
 | PII Precision | ≥85% | Stage 3〜5 |
-| 主要ラベル F1 | ≥85% | Stage 5 |
+| 主要ラベル Recall / Precision | 90% / 85% | Stage 5 |
 | 作業削減率 | ≥50% | Stage 6 |
 | 見逃し率 | ≤5% | Stage 6 |
 

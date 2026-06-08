@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -23,8 +24,12 @@ from pathlib import Path
 
 from ledger import append_row  # same dir
 
-# Labels we surface as separate per-label rows (spec §6 主要ラベル, 2026-06-08改訂). Extend freely.
-KEY_LABELS = ["PERSON", "ADDRESS", "ID", "ORGANIZATION", "AGE"]
+# Per-label rows are discovered dynamically from the metrics JSON keys, because
+# the label names depend on the checkpoint: the stock model emits lowercase
+# `private_person` etc. (category_version v2, 8 cats), while a fine-tuned model
+# uses the custom span_class_names (our 10 labels). Hardcoding names would
+# silently drop every per-label row. See docs/findings-opf-cli.md §4.
+_PER_LABEL_F1 = re.compile(r"^by_class\.(.+)\.span\.f1$")
 
 
 def run_opf_eval(dataset: str, metrics_out: Path, *, checkpoint: str | None,
@@ -45,17 +50,21 @@ def to_rows(metrics: dict, base: dict, latency_ms: float) -> list[dict]:
     p = metrics.get("detection.span.precision")
     r = metrics.get("detection.span.recall")
     f1 = metrics.get("detection.span.f1")
+    if f1 is None:
+        # OPF omits span keys when the denominator is 0 (e.g. no predictions).
+        print("WARNING: detection.span.f1 missing — model produced no usable "
+              "spans? recording ALL row with blanks.", file=sys.stderr)
     rows.append({**base, "label": "ALL", "precision": p, "recall": r, "f1": f1,
                  "miss_rate": (1 - r) if r is not None else "",
                  "false_pos_rate": (1 - p) if p is not None else "",
                  "latency_ms": round(latency_ms, 1),
                  "note": f"token_accuracy={metrics.get('token_accuracy')}"})
-    for lbl in KEY_LABELS:
+    # Discover every per-label span metric present (labels vary by checkpoint).
+    labels = sorted(m.group(1) for k in metrics if (m := _PER_LABEL_F1.match(k)))
+    for lbl in labels:
         lp = metrics.get(f"by_class.{lbl}.span.precision")
         lr = metrics.get(f"by_class.{lbl}.span.recall")
         lf = metrics.get(f"by_class.{lbl}.span.f1")
-        if lp is None and lr is None and lf is None:
-            continue
         rows.append({**base, "label": lbl, "precision": lp, "recall": lr, "f1": lf,
                      "miss_rate": (1 - lr) if lr is not None else "",
                      "false_pos_rate": (1 - lp) if lp is not None else ""})
