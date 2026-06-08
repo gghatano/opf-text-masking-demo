@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OPF 日本語適用性 実証実験 — 評価レポート</title>
+<style>
+:root { --fg:#1a1a1a; --muted:#666; --accent:#c0392b; --line:#e3e3e3; --bg:#fff; --code:#f6f8fa; --sidebar:#fbfbfc; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { font-family: -apple-system,"Segoe UI","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+  color: var(--fg); background: #f3f4f6; line-height: 1.85; margin: 0; }
+.hero { background: linear-gradient(135deg,#2c3e50 0%,#c0392b 130%); color:#fff; padding: 36px 24px 0; }
+.hero .inner { max-width: 1180px; margin: 0 auto; }
+.hero h1 { margin: 0 0 .3em; font-size: 1.8rem; border: none; color:#fff; }
+.hero p { margin: .2em 0; opacity: .92; font-size: .94rem; }
+.hero a { color:#ffe; }
+.nav { max-width: 1180px; margin: 16px auto 0; display: flex; gap: 6px; }
+.nav a { padding: 9px 18px; border-radius: 8px 8px 0 0; background: rgba(255,255,255,.14); color:#fff;
+  text-decoration: none; font-size: .9rem; border: 1px solid rgba(255,255,255,.25); border-bottom: none; }
+.nav a.active { background: #f3f4f6; color: var(--accent); font-weight: 600; }
+.nav a:hover:not(.active) { background: rgba(255,255,255,.26); }
+.layout { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 250px 1fr; gap: 32px; padding: 24px 24px 96px; }
+nav.toc { position: sticky; top: 18px; align-self: start; max-height: calc(100vh - 36px); overflow-y: auto;
+  background: var(--sidebar); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; font-size: .86rem; }
+nav.toc strong { display: block; margin-bottom: 8px; color: var(--accent); }
+nav.toc ul { list-style: none; padding-left: 0; margin: 0; } nav.toc ul ul { padding-left: 12px; }
+nav.toc li { margin: 3px 0; } nav.toc a { color:#34495e; text-decoration: none; display: block; padding: 2px 0; }
+nav.toc a:hover { color: var(--accent); }
+article { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 40px 56px;
+  box-shadow: 0 1px 10px rgba(0,0,0,.04); min-width: 0; }
+article > h1:first-of-type { display: none; }
+h2 { font-size: 1.45rem; margin-top: 2.2em; border-bottom: 1px solid var(--line); padding-bottom: .3em; scroll-margin-top: 16px; }
+h3 { font-size: 1.16rem; margin-top: 1.7em; color:#222; scroll-margin-top: 16px; }
+h4 { font-size: 1.0rem; margin-top: 1.3em; color: var(--accent); }
+a { color:#1565c0; text-decoration: none; } a:hover { text-decoration: underline; }
+a[href^="#ref"] { font-size:.72em; vertical-align:super; line-height:0; color:#1565c0; background:#eef4fb;
+  border:1px solid #cfe0f3; border-radius:4px; padding:0 4px; margin:0 1px; text-decoration:none; white-space:nowrap; }
+a[href^="#ref"]:hover { background:#d7e8fb; }
+:target { scroll-margin-top: 18px; }
+code { background: var(--code); padding: .15em .4em; border-radius: 4px; font-size: .88em;
+  font-family: "Cascadia Code",Consolas,"SF Mono",monospace; }
+pre { background: var(--code); padding: 15px 18px; border-radius: 8px; overflow-x: auto; border: 1px solid var(--line); }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .9rem; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--line); padding: 8px 11px; text-align: left; white-space: nowrap; }
+th { background: #f2f4f7; font-weight: 600; } tr:nth-child(even) td { background: #fbfbfc; }
+img { max-width: 100%; height: auto; display: block; margin: 1.2em auto; border: 1px solid var(--line); border-radius: 8px; }
+.mermaid { background:#fff; border:1px solid var(--line); border-radius:8px; padding:14px; margin:1.4em 0; text-align:center; overflow-x:auto; }
+blockquote { border-left: 4px solid var(--accent); margin: 1.2em 0; padding: .4em 1.2em; background:#fdf3f2; color:#444; border-radius: 0 6px 6px 0; }
+blockquote.badge-doc { border-left-color:#1565c0; background:#eef4fb; color:#21303f; }
+blockquote.badge-note { border-left-color:#b9770e; background:#fdf6e9; color:#3a2e12; }
+blockquote.badge-legend { border-left-color:#607d8b; background:#eef1f3; color:#243; }
+hr { border: none; border-top: 1px solid var(--line); margin: 2.2em 0; }
+footer { max-width: 1180px; margin: 0 auto; padding: 24px; color: var(--muted); font-size: .85rem; text-align: center; }
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } nav.toc { position: static; max-height: none; } article { padding: 12px 20px 40px; } }
+</style>
+</head>
+<body>
+<header class="hero"><div class="inner">
+  <h1>OPF 日本語適用性 実証実験 — 評価レポート</h1>
+  <p>手法詳細: GiNZA (ja_ginza)</p>
+</div><nav class="nav"><a href="index.html">📄 サマリ</a><a href="method-opf.html">🅾 OPF</a><a href="method-ginza.html" class="active">🌿 GiNZA</a></nav></header>
+<div class="layout">
+  <nav class="toc"><strong>目次</strong><div class="toc">
+<ul>
+<li><a href="#_1">概要</a></li>
+<li><a href="#_2">定性スモーク結果</a></li>
+<li><a href="#3">ラベル対応の論点（#3）</a></li>
+<li><a href="#_3">環境メモ（落とし穴）</a></li>
+<li><a href="#_4">出典</a></li>
+</ul>
+</div>
+</nav>
+  <article><h1 id="ginza-ja_ginza">手法詳細: GiNZA (<code>ja_ginza</code>)</h1>
+<blockquote class="badge-legend">
+<p>📑 凡例: <code>[n]</code>=事実／🔎=実測・解釈。サマリは <a href="index.html">評価レポート</a> を参照。比較対象 Issue #9。</p>
+</blockquote>
+<h2 id="_1">概要</h2>
+<p>📘 GiNZA は spaCy ベースの日本語 NLP ライブラリ。NER は<strong>関根の拡張固有表現体系</strong>で型が細かい（<code>Person / Age / Date / City / Province / Position_Vocation / Organization</code> 等）。PII 専用ではなく汎用 NER のため、PII 検出には<strong>ラベル対応（マッピング）と後処理</strong>が要る。<code>pip install ginza ja_ginza</code> だけで日本語NERがすぐ動く＝<strong>最短で比較線を引ける</strong>ため最初の比較対象に採用。</p>
+<h2 id="_2">定性スモーク結果</h2>
+<p>OPF と同一文に <code>ja_ginza</code> を適用（<code>outputs/ginza_smoke.txt</code>、<code>scripts/ginza_smoke.py</code>）。検出エンティティ（text → GiNZA label）:</p>
+<table>
+<thead>
+<tr>
+<th>文</th>
+<th>検出エンティティ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>佐藤花子さん(72歳)、東京都千代田区…電話090-1234-5678、受付番号A-0012</td>
+<td>佐藤花子=Person / さん=Title_Other / <strong>72歳=Age</strong> / 東京都千代田区=City / 電話=City(誤) / 090-1234=N_Organization(誤)</td>
+</tr>
+<tr>
+<td>患者の山田太郎は2025年1月3日に○○病院を受診。担当は鈴木医師</td>
+<td>患者=Position_Vocation / 山田太郎=Person / <strong>2025年1月3日=Date</strong> / 鈴木=Person / 医師=Position_Vocation</td>
+</tr>
+<tr>
+<td>Contact: 田中一郎, tanaka@example.co.jp, 03-1234-5678</td>
+<td>Contact=Show_Organization(誤) / 田中一郎=Person / @example.co.jp=Email(部分) / 03-1234=Time(誤)</td>
+</tr>
+</tbody>
+</table>
+<p>🔎 <strong>所見</strong>:
+- <strong>強み</strong>: 年齢(Age)・和暦日付(Date)・職業(Position_Vocation)など<strong>準識別子を拾う</strong>（OPFの弱点を補完）。固有表現の型が豊富。
+- <strong>弱み</strong>: 電話・メールなど<strong>構造化PIIを誤分割/誤ラベル</strong>（"電話"→City, 電話番号→N_Organization/Time, email部分一致）。過分割・型ノイズが出る。NER ゆえパターン系は不得手。
+- → OPF/正規表現と<strong>相補的</strong>。アンサンブルで10ラベルの広いカバレッジが狙える（サマリ図2）。</p>
+<h2 id="3">ラベル対応の論点（#3）</h2>
+<p>GiNZA の拡張固有表現 → 仕様10ラベル（2026-06-08改訂）の対応表が必要（例: Person→PERSON, City/Province→ADDRESS/REGION, Age→AGE, Date→DATE, Position_Vocation→OCCUPATION, Company/School/Facility系→ORGANIZATION）。電話/メール/各種IDは GiNZA 標準では不安定なため、正規表現併用または untyped 評価で扱う。確定は #3。</p>
+<h2 id="_3">環境メモ（落とし穴）</h2>
+<p>⚠️ GiNZA 5.2 は新しい spaCy 3.8 / confection と非互換（<code>compound_splitter.split_mode: None</code> の検証エラー）。回避:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">nlp</span> <span class="o">=</span> <span class="n">spacy</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;ja_ginza&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;components.compound_splitter.split_mode&quot;</span><span class="p">:</span> <span class="s2">&quot;C&quot;</span><span class="p">})</span>
+</code></pre></div>
+
+<p>（<code>scripts/ginza_smoke.py</code> に反映済。導入: <code>uv pip install -U ginza ja_ginza</code>、spaCy 3.8.14 / ginza 5.2.0）</p>
+<h2 id="_4">出典</h2>
+<ul>
+<li>GiNZA: https://github.com/megagonlabs/ginza ／ 関根の拡張固有表現階層</li>
+</ul></article>
+</div>
+<footer>Source: <a href="https://github.com/gghatano/opf-text-masking-demo">https://github.com/gghatano/opf-text-masking-demo</a> · Upstream: <a href="https://github.com/openai/privacy-filter">https://github.com/openai/privacy-filter</a></footer>
+
+</body>
+</html>

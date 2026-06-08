@@ -1,0 +1,7 @@
+# GiNZA comparison model (Stage 4 / #9). Kept separate from base requirements.txt
+# to keep the eval/build env light. Install: uv pip install -r requirements-ginza.txt
+# Verified 2026-06-08 on Python 3.12.12 (spaCy 3.8.14). Note the split_mode workaround
+# in scripts/ginza_smoke.py (compound_splitter incompatibility with new spaCy/confection).
+ginza==5.2.0
+ja-ginza==5.2.0
+spacy==3.8.14
