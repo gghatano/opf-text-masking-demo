@@ -1,0 +1,53 @@
+name: Deploy report to GitHub Pages
+
+# REPORT.md / EXPERIMENTS.md と figures/ から自己完結 HTML を生成し、GitHub Pages に公開する。
+# 重い依存は使わず markdown だけでビルドするので数十秒で終わる。
+# 事前準備: GitHub の Settings → Pages → Source を「GitHub Actions」にすること。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "REPORT.md"
+      - "EXPERIMENTS.md"
+      - "figures/**"
+      - "scripts/build_html.py"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install build deps
+        run: pip install markdown pygments
+      - name: Build site (htmls/)
+        run: python scripts/build_html.py
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: htmls
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
