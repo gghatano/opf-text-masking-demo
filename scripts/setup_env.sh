@@ -1,55 +1,40 @@
 #!/usr/bin/env bash
-# Idempotent environment setup for the OPF Japanese-PII verification.
-# - Creates a Python 3.11/3.12 venv (torch lacks 3.14 wheels; see docs/findings-opf-cli.md)
-# - Clones openai/privacy-filter into third_party/ and installs it editable
+# Idempotent environment setup (uv-based) for the OPF Japanese-PII verification.
+# - Uses `uv` to provision a Python 3.12 venv (torch lacks 3.14 wheels; see
+#   docs/findings-opf-cli.md). uv auto-downloads 3.12 if missing.
+# - Clones openai/privacy-filter into third_party/ and installs it editable.
 # Re-running is safe: existing steps are skipped.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+PYVER="${PYVER:-3.12}"
 OPF_SRC="third_party/privacy-filter"
 
-# 1) Pick a compatible Python (3.12 > 3.11). Override with PYTHON env var.
-pick_python() {
-  if [[ -n "${PYTHON:-}" ]]; then echo "$PYTHON"; return; fi
-  for c in python3.12 python3.11 py; do
-    if command -v "$c" >/dev/null 2>&1; then
-      if [[ "$c" == "py" ]]; then
-        if py -3.12 --version >/dev/null 2>&1; then echo "py -3.12"; return; fi
-        if py -3.11 --version >/dev/null 2>&1; then echo "py -3.11"; return; fi
-      else echo "$c"; return; fi
-    fi
-  done
-  echo ""  # none found
-}
+command -v uv >/dev/null 2>&1 || { echo "ERROR: uv not found. Install from https://docs.astral.sh/uv/" >&2; exit 1; }
+echo ">> uv $(uv --version)"
 
-PY="$(pick_python)"
-if [[ -z "$PY" ]]; then
-  echo "ERROR: Python 3.11/3.12 not found. torch has no 3.14 wheel yet." >&2
-  echo "Install Python 3.12 (or set PYTHON=...) and re-run." >&2
-  exit 1
-fi
-echo ">> Using interpreter: $PY"
-
-# 2) venv (idempotent)
+# 1) venv with a torch-compatible Python (idempotent; uv fetches 3.12 if needed)
 if [[ ! -d .venv ]]; then
-  echo ">> Creating .venv"
-  $PY -m venv .venv
+  echo ">> Creating .venv (Python $PYVER) via uv"
+  uv venv --python "$PYVER" .venv
 fi
 # shellcheck disable=SC1091
 source .venv/Scripts/activate 2>/dev/null || source .venv/bin/activate
-python -m pip install -q --upgrade pip
+echo ">> Python: $(python --version)"
 
-# 3) Clone + install OPF (idempotent)
+# 2) Clone OPF upstream (idempotent)
 if [[ ! -d "$OPF_SRC" ]]; then
   echo ">> Cloning openai/privacy-filter"
   git clone --depth 1 https://github.com/openai/privacy-filter.git "$OPF_SRC"
 fi
-echo ">> Installing OPF (editable)"
-python -m pip install -q -e "$OPF_SRC"
 
-# 4) Project deps (eval/plot/compare). GiNZA etc. installed on demand by their scripts.
-python -m pip install -q -r requirements.txt || true
+# 3) Install OPF (editable) + project deps via uv pip
+echo ">> Installing OPF (editable) + deps"
+uv pip install -e "$OPF_SRC"
+uv pip install -r requirements.txt
 
-echo ">> Smoke test"
-opf "Alice was born on 1990-01-02." || echo "(smoke run failed — check install)"
+# 4) Smoke test (CPU: the default CPU torch wheel is not CUDA-enabled)
+echo ">> Smoke test (--device cpu)"
+opf --device cpu "Alice was born on 1990-01-02." || echo "(smoke run failed — check install)"
 echo ">> Done. Activate with: source .venv/Scripts/activate (Windows) | source .venv/bin/activate"
+echo ">> Freeze deps when stable: uv pip freeze > requirements.txt"

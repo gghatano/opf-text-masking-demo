@@ -8,14 +8,15 @@ OpenAI Privacy Filter (`opf`) の**日本語自由記述データへの適用性
 - OPF CLI/学習仕様メモ: [`docs/findings-opf-cli.md`](docs/findings-opf-cli.md)
 - 進捗: GitHub Issues（epic: #16）
 
-## セットアップ
+## セットアップ（uv）
 
 ```bash
-bash scripts/setup_env.sh      # 3.11/3.12 venv 作成 + OPF を editable 導入 + スモーク
+bash scripts/setup_env.sh      # uv で 3.12 venv 作成 + OPF を editable 導入 + スモーク
 source .venv/Scripts/activate  # Windows（macOS/Linux は .venv/bin/activate）
 ```
 
-> ⚠️ **Python 3.14 では torch ホイールが未提供**のことが多い。`setup_env.sh` は 3.11/3.12 を自動選択する。見つからない場合は 3.12 を導入して再実行（`PYTHON=...` で明示指定も可）。詳細は `docs/findings-opf-cli.md`。
+> ⚠️ **Python 3.14 では torch ホイールが未提供**。`setup_env.sh` は `uv venv --python 3.12` で 3.12 を確保（uv が自動取得）。`PYVER=3.11` 等で変更可。
+> ⚠️ **CPU 機では `--device cpu` 必須**（CPU 版 torch は CUDA 無効）。詳細は `docs/findings-opf-cli.md`。
 
 ## 評価の流れ（数値が順次わかる）
 

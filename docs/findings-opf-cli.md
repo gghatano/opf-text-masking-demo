@@ -3,10 +3,17 @@
 upstream `openai/privacy-filter` の**ソース直読**で確定した事実。Issue #1（環境構築）・#2（評価基盤）・#11（LoRA方式）の根拠。
 確認元: `opf/_train/args.py`, `opf/_eval/args.py`, `opf/_eval/metrics.py`, `pyproject.toml`, `README.md`（いずれも main, 2026-06-08 取得）。
 
-## 1. 動作要件・依存
+## 1. 動作要件・依存（実機検証済み 2026-06-08）
 - `requires-python = ">=3.10"`。依存は `numpy / torch / tiktoken`（`pyproject.toml`）。
-- ⚠️ **落とし穴**: 本環境は Python 3.14。torch は 3.14 向けホイール未提供の可能性が高く、`pip install -e .` が失敗しうる。→ **3.11/3.12 の venv を作って導入**する（`setup_env.sh` がそれを行う）。
-- GPU 既定 / `--device cpu` で CPU 実行可（README）。
+- ⚠️ **落とし穴**: 本環境の既定は Python 3.14。torch 3.14 向けホイールが無く失敗する。→ **`uv` で 3.12 venv を作る**（`setup_env.sh` が `uv venv --python 3.12`。uv が 3.12 を自動取得）。導入結果は torch==2.12.0 / tiktoken==0.13.0（`requirements.txt` に固定）。
+- ⚠️ **CUDA 落とし穴**: CPU 版 torch ホイールは CUDA 無効。OPF は既定で CUDA を使おうとし `AssertionError: Torch not compiled with CUDA enabled` になる。→ **`--device cpu` 必須**（CPU 機の場合）。`02_evaluate.py` も既定 cpu。
+- スモーク（CPU）確認済み: `My name is <PRIVATE_PERSON>, email <PRIVATE_EMAIL>, born <PRIVATE_DATE>.`
+
+### 日本語 素モデル定性スモーク（参考・正式B0ではない）
+- ✓ 検出: 氏名(佐藤花子/山田太郎)・住所(東京都千代田区)・電話・email・"鈴木医師"の氏名部
+- ✗ 見逃し: **年齢(72歳)・業務ID(受付番号A-0012)・施設名(○○病院)・日本語日付(2025年1月3日)**
+- → 仮説「基本PIIは拾うが業務ID/組織/準識別子/和暦日付は素では落ちる」と整合。B1/B2 の伸びしろ。
+- ⚠️ Windows コンソールは日本語出力が文字化けするが処理自体は正常（評価はファイル/JSON経由で行うため影響なし）。
 
 ## 2. `opf train`（フルFT・本体既定値）
 - **LoRA / PEFT /量子化学習のフラグは存在しない**。最適化は AdamW による**フルパラメータ FT のみ**。→ Issue #11 は「LoRA 非対応 → full FT」で確定。
