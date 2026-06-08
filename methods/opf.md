@@ -11,7 +11,7 @@
 - **推論**: `opf [--device cpu] "テキスト"` / ファイル `opf -f file` / パイプ `... | opf`
 - **学習**: `opf train train.jsonl --label-space-json labels.json --checkpoint <base> --output-dir <ft>`
   - **LoRA 非対応＝フルFT のみ**（AdamW）[\[2\]](#ref2)。既定: `--epochs 1 --batch-size 4 --learning-rate 1e-5 --weight-decay 0.01 --validation-split 0.1`
-  - `--label-space-json` の `span_class_names`（先頭 `O`）で既定8カテゴリを**置換** → 仕様18ラベルを直接学習可
+  - `--label-space-json` の `span_class_names`（先頭 `O`）で既定8カテゴリを**置換** → 仕様10ラベルを直接学習可
 - **評価**: `opf eval data.jsonl --metrics-out m.json --eval-mode {typed,untyped}`
   - メトリクスJSON: `detection.span.{precision,recall,f1}`, `by_class.<label>.span.*`, `token_accuracy`, untyped 用 `ground_truth_label_recall.recall.<label>`
   - スパン一致は**包含(containment)判定**（厳密一致でない）→ 比較は同一定義に統一

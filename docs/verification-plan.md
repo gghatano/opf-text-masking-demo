@@ -23,25 +23,24 @@
 - 図を 3 枚、各 Stage 完了時に再生成：
   1. `figures/score_progression.png` — Stage 軸（B0→B1→B2）の全体 F1/Recall/誤検出の改善曲線。**これが主役。**
   2. `figures/model_leaderboard.png` — モデル A/B/C/D の横比較バー（同一データ・同一指標）。
-  3. `figures/per_label_f1.png` — 主要ラベル別 F1（PERSON/FACILITY/STAFF/ADDRESS/PATIENT_ID）[spec §6]。
+  3. `figures/per_label_f1.png` — 主要ラベル別 F1（PERSON/ADDRESS/ID/ORGANIZATION/AGE）[spec §6]。
 - 成功基準ライン（Recall90%, Precision85%, F1 85%, 見逃し5%, 削減50% [spec §9]）を図に水平線で描き、**達成までの距離**を常に可視化。
 
 ---
 
 ## 1. ラベル体系と OPF 素モデルの対応（伸びしろの所在）
 
-仕様の 18 ラベル [spec §5] と OPF 素の 8 カテゴリ [\[1\]](#ref1) の対応。**素モデルで構造的に出せないラベルが「改善の伸びしろ」**＝ Stage が進むと recall が跳ねる箇所。
+仕様の **10 ラベル**（2026-06-08 改訂 [spec §5]）と OPF 素の 8 カテゴリ [\[1\]](#ref1) の対応。**素モデルで構造的に出せないラベルが「改善の伸びしろ」**＝ Stage が進むと recall が跳ねる箇所。
 
 | 群 | 仕様ラベル | OPF 素カテゴリ対応 | 素モデルでの見込み 🔎 |
 |---|---|---|---|
-| 基本PII | PERSON / ADDRESS / PHONE / EMAIL / DATE | private_person / private_address / private_phone / private_email / private_date | 比較的拾える（英語中心ゆえ日本語表記で取りこぼし懸念） |
-| 業務識別子 | PATIENT_ID / INSURANCE_ID / CASE_ID / ACCOUNT_ID | account_number に弱く写像 / 大半は型不一致 | 低い。後処理(正規表現)・追加学習で回収 |
-| 組織 | FACILITY / STAFF / COMPANY / SCHOOL | 該当カテゴリ無し（STAFFは person に一部） | ほぼ 0。追加学習が前提 |
-| 準識別子 | AGE / REGION / OCCUPATION / ORGANIZATION | 該当カテゴリ無し | ほぼ 0。本質的に難。別扱い・honest に限界を記載 |
+| 直接識別子 | PERSON / ADDRESS / PHONE / EMAIL / DATE | private_person / private_address / private_phone / private_email / private_date | 比較的拾える（英語中心ゆえ日本語表記で取りこぼし懸念） |
+| 直接識別子 | ID（患者/被保険者/受付/会員番号を統合） | account_number に弱く写像 / 型不一致が多い | 低い。後処理(正規表現)・追加学習で回収 |
+| 準識別子 | AGE / REGION / OCCUPATION / ORGANIZATION（会社/学校/施設を統合） | 該当カテゴリ無し | ほぼ 0。本質的に難。別扱い・honest に限界を記載 |
 
-> 🔎 OPF 素モデルは固定 8 カテゴリのトークン分類器 [\[1\]](#ref1)。業務識別子・組織・準識別子は素では出せないため、**B0 の全体 recall は低く出る前提**。これを正規表現フォールバック(B1)→ 18 ラベルでの追加学習(B2) [spec §7-2] で押し上げる設計が、まさに「数値が順次伸びる」物語になる。
-> 🔎 準識別子（AGE/OCCUPATION/REGION）は誤検出と表裏で難度が高い。成功基準 Recall90% は主に基本PII＋業務識別子で狙い、準識別子は限界を正直に記載する方針を推奨。
-> 📌 **重要（追加学習でラベル体系を置換できる）**: `opf train --label-space-json` に `{"category_version": "...", "span_class_names": ["O", "PERSON", "PATIENT_ID", ...]}` を渡すと、既定8カテゴリを**置換**して仕様の18ラベルそのもので学習できる [\[5\]](#ref5)。よって B2 ではマッピングに頼らず18ラベル直接学習が可能。一方 B0/B1（素モデル）は8カテゴリしか出ないため、B0 比較は **untyped 評価（スパン検出のみ）＋ ラベル写像での typed 部分評価** を併用する。
+> 🔎 OPF 素モデルは固定 8 カテゴリのトークン分類器 [\[1\]](#ref1)。ID・準識別子は素では出せないため、**B0 の全体 recall は低く出る前提**。これを正規表現フォールバック(B1)→ 10 ラベルでの追加学習(B2) [spec §7-2] で押し上げる設計が、まさに「数値が順次伸びる」物語になる。
+> 🔎 準識別子（AGE/OCCUPATION/REGION/ORGANIZATION）は誤検出と表裏で難度が高い。成功基準 Recall90% は主に直接識別子（基本PII＋ID）で狙い、準識別子は限界を正直に記載する方針を推奨。
+> 📌 **重要（追加学習でラベル体系を置換できる）**: `opf train --label-space-json` に `{"category_version": "...", "span_class_names": ["O", "PERSON", "ID", "AGE", ...]}` を渡すと、既定8カテゴリを**置換**して仕様の10ラベルそのもので学習できる [\[5\]](#ref5)。よって B2 ではマッピングに頼らず10ラベル直接学習が可能。一方 B0/B1（素モデル）は8カテゴリしか出ないため、B0 比較は **untyped 評価（スパン検出のみ）＋ ラベル写像での typed 部分評価** を併用する。
 
 ---
 
@@ -50,7 +49,7 @@
 | 指標 | 定義 | 対応 |
 |---|---|---|
 | Precision / Recall / F1（エンティティ単位） | スパン＋ラベル一致 | spec §6 主指標。成功基準 R≥90/P≥85 |
-| ラベル別 F1 | PERSON/FACILITY/STAFF/ADDRESS/PATIENT_ID 等 | spec §6。主要ラベル F1≥85% |
+| ラベル別 F1 | PERSON/ADDRESS/ID/ORGANIZATION/AGE 等 | spec §6。主要ラベル F1≥85% |
 | 漏れ率(miss_rate) | 未検出 PII 件数 / 全 PII | spec §6。見逃し率≤5% |
 | 誤検出率(false_pos_rate) | 非PIIをPII判定 / 判定総数 | spec §6。閾値調整で管理 |
 | 作業削減率 | (人手単独工数 − 支援併用工数)/人手単独工数 | spec §7-3,§9。≥50% |
@@ -83,31 +82,31 @@
 - ゲート: CLI が JSON スパンを返し、`opf eval --metrics-out` が `detection.span.f1` 等を含む JSON を出す。
 
 ### Stage 1 — 評価基盤・データ整備（成果物1）
-- 合成 300 件生成＋自動ラベル、アノテーション一貫性(κ)確認、18ラベル↔OPF 8カテゴリ mapping 確定、`metrics_ledger.csv` と評価スクリプト整備。
+- 合成 300 件生成＋自動ラベル、アノテーション一貫性(κ)確認、10ラベル↔OPF 8カテゴリ mapping 確定、`metrics_ledger.csv` と評価スクリプト整備。
 - ゲート: 300 件に正解ラベルが付き、評価パイプラインが 1 行を台帳に書ける。
 
 ### Stage 2 — ベースライン **B0**（シナリオ1 [spec §7-1]）
 - OPF 素モデル・既定設定で 300 件評価。ドメイン別・ラベル別に台帳記録。
 - ゲート: 全体／ドメイン別／主要ラベル別の P/R/F1・漏れ・誤検出が揃う。
-- 期待: 🔎 全体 recall は低め（業務識別子・組織・準識別子が素では出ない）。**これが基準点。**
+- 期待: 🔎 全体 recall は低め（ID・準識別子(AGE/ORGANIZATION等)が素では出ない）。**これが基準点。**
 
 ### Stage 3 — 後処理・閾値チューニング **B1**
 - 構造化PII（PHONE/EMAIL/各種ID）への正規表現フォールバック、日本語表記ゆれ対応、閾値調整で誤検出抑制 [spec §10]。
 - ゲート: **全体 F1・recall が B0 を上回り**、誤検出率が許容内。
-- 期待: 🔎 業務識別子の recall が回収され全体が一段改善。
+- 期待: 🔎 ID（番号類）の recall が正規表現で回収され全体が一段改善。
 
 ### Stage 4 — 多モデル比較（GiNZA から）
 - **まず GiNZA（spaCy `ja_ginza`）** を最初の比較対象にする（`pip install` だけで日本語 NER がすぐ動く＝最短で1本の比較線が引ける）。次に Presidio、GLiNER、他の日本語NER(LUKE/DeBERTa) を順次追加 [spec §4]。
-- GiNZA の NER ラベル体系（PERSON/LOC/ORG/DATE 等）↔ 仕様18ラベルの対応表を作成（GiNZA 公式で確認）。電話/メール/口座番号/secret は GiNZA 標準では拾えない＝守備範囲の差が比較軸。
+- GiNZA の NER ラベル体系（PERSON/LOC/ORG/DATE 等）↔ 仕様10ラベルの対応表を作成（GiNZA 公式で確認）。電話/メール/口座番号/secret は GiNZA 標準では拾えない＝守備範囲の差が比較軸。
 - ゲート: 同一データ・同一スパン一致判定で A/B/C/D が並ぶ（スパン一致基準＝完全一致/部分重複を評価側で統一）。
 - 期待: 🔎 「日本語固有表現は GiNZA 等が強い／構造化PIIは正規表現＋OPF が強い」役割分担が見える。
 
 ### Stage 5 — 日本語追加学習 **B2**（シナリオ2 [spec §7-2]・成果物3）
-- 学習データを `opf` の JSONL スキーマ（`{"text":..., "label":[{"category","start","end"}]}`、**文字オフセット** [\[5\]](#ref5)）で 500〜1,000 件用意。`--label-space-json` に18ラベルの `span_class_names`（先頭 `O`）を定義。
+- 学習データを `opf` の JSONL スキーマ（`{"text":..., "label":[{"category","start","end"}]}`、**文字オフセット** [\[5\]](#ref5)）で 500〜1,000 件用意。`--label-space-json` に10ラベルの `span_class_names`（先頭 `O`）を定義。
 - `opf train train.jsonl --validation-dataset val.jsonl --label-space-json labels.json --checkpoint <base> --output-dir <ft>` で学習 [\[5\]](#ref5)。LoRA 対応が確認できればそれを使い、無ければ full FT（モデルは小型なので現実的）。複数 seed で mean±std。回帰セット凍結。
 - before/after は同一 test.jsonl に対し `opf eval --checkpoint <base|ft> --eval-mode typed/untyped --metrics-out *.json` を回し、`detection.span.f1`・`by_class.<label>.span.*` を台帳へ [\[5\]](#ref5)。
 - ゲート: **対象ドメインで全体 F1・recall が B1 を上回る**。成功基準（R≥90/P≥85/主要ラベルF1≥85% [spec §9]）への到達度を測定。
-- 期待: 🔎 組織・業務識別子で大幅改善。準識別子の限界も定量化。
+- 期待: 🔎 ID・ORGANIZATION で大幅改善。準識別子(AGE/REGION/OCCUPATION)の限界も定量化。
 
 ### Stage 6 — 業務適用評価（シナリオ3 [spec §7-3]・成果物4）
 - 「自由記述→Privacy Filter→候補抽出→作業者レビュー→確定」フローの試作で、**処理時間・修正件数・見逃し件数・作業工数**を測定し **作業削減率**を算出。人手単独を対照に。

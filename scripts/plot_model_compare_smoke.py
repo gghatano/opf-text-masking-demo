@@ -27,8 +27,8 @@ ROWS = [
     ("DATE (Japanese)",          (0, 2)),
     ("AGE",                      (0, 2)),
     ("OCCUPATION (doctor etc.)", (0, 2)),
-    ("FACILITY (hospital)",      (0, 0)),
-    ("BUSINESS_ID",              (0, 0)),
+    ("ORGANIZATION (hospital)",  (0, 0)),
+    ("ID (uketsuke-bango)",      (0, 0)),
 ]
 COLORS = {2: "#2e7d32", 1: "#f9a825", 0: "#c62828"}
 LABELS = {2: "detected", 1: "partial", 0: "missed"}

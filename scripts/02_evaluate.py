@@ -23,8 +23,8 @@ from pathlib import Path
 
 from ledger import append_row  # same dir
 
-# Labels we surface as separate per-label rows (spec §6 主要ラベル). Extend freely.
-KEY_LABELS = ["PERSON", "FACILITY", "STAFF", "ADDRESS", "PATIENT_ID"]
+# Labels we surface as separate per-label rows (spec §6 主要ラベル, 2026-06-08改訂). Extend freely.
+KEY_LABELS = ["PERSON", "ADDRESS", "ID", "ORGANIZATION", "AGE"]
 
 
 def run_opf_eval(dataset: str, metrics_out: Path, *, checkpoint: str | None,

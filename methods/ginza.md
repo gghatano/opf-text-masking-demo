@@ -17,10 +17,10 @@ OPF と同一文に `ja_ginza` を適用（`outputs/ginza_smoke.txt`、`scripts/
 🔎 **所見**:
 - **強み**: 年齢(Age)・和暦日付(Date)・職業(Position_Vocation)など**準識別子を拾う**（OPFの弱点を補完）。固有表現の型が豊富。
 - **弱み**: 電話・メールなど**構造化PIIを誤分割/誤ラベル**（"電話"→City, 電話番号→N_Organization/Time, email部分一致）。過分割・型ノイズが出る。NER ゆえパターン系は不得手。
-- → OPF/正規表現と**相補的**。アンサンブルで18ラベルの広いカバレッジが狙える（サマリ図2）。
+- → OPF/正規表現と**相補的**。アンサンブルで10ラベルの広いカバレッジが狙える（サマリ図2）。
 
 ## ラベル対応の論点（#3）
-GiNZA の拡張固有表現 → 仕様18ラベルの対応表が必要（例: Person→PERSON, City/Province→ADDRESS/REGION, Age→AGE, Date→DATE, Position_Vocation→OCCUPATION/STAFF）。電話/メール/各種IDは GiNZA 標準では不安定なため、正規表現併用または untyped 評価で扱う。確定は #3。
+GiNZA の拡張固有表現 → 仕様10ラベル（2026-06-08改訂）の対応表が必要（例: Person→PERSON, City/Province→ADDRESS/REGION, Age→AGE, Date→DATE, Position_Vocation→OCCUPATION, Company/School/Facility系→ORGANIZATION）。電話/メール/各種IDは GiNZA 標準では不安定なため、正規表現併用または untyped 評価で扱う。確定は #3。
 
 ## 環境メモ（落とし穴）
 ⚠️ GiNZA 5.2 は新しい spaCy 3.8 / confection と非互換（`compound_splitter.split_mode: None` の検証エラー）。回避:

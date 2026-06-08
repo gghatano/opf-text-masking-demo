@@ -23,11 +23,11 @@ ROWS = [
     ("PHONE", 2),
     ("EMAIL", 2),
     ("DATE (western, 1990-01-02)", 2),
-    ("STAFF (person part only)", 1),
+    ("PERSON in title (e.g. doctor name)", 1),
     ("DATE (Japanese, 2025-nen-1-gatsu)", 0),
     ("AGE (72-sai)", 0),
-    ("FACILITY (hospital name)", 0),
-    ("BUSINESS_ID (uketsuke-bango)", 0),
+    ("ORGANIZATION (hospital name)", 0),
+    ("ID (uketsuke-bango)", 0),
 ]
 COLORS = {2: "#2e7d32", 1: "#f9a825", 0: "#c62828"}
 LABELS = {2: "detected", 1: "partial", 0: "missed"}
