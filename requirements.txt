@@ -1,0 +1,8 @@
+# Project deps for the verification harness (eval/plot/compare).
+# OPF itself is installed editable from third_party/privacy-filter by setup_env.sh
+# (pulls numpy/torch/tiktoken). GiNZA/Presidio/GLiNER are installed by their own
+# Stage-4 scripts to keep the base env light.
+#
+# NOTE: versions are NOT pinned yet. Freeze with `pip freeze` AFTER the first
+# successful `setup_env.sh` run on a 3.11/3.12 venv (see docs/findings-opf-cli.md).
+matplotlib

@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# OPF upstream (cloned by setup_env.sh) and inspection clone
+.upstream-tmp/
+third_party/
+
+# Data (re-generatable / sensitive) — keep labels & metrics, not raw text dumps
+data/
+
+# Large model checkpoints
+checkpoints/
+*.safetensors
+
+# Outputs: keep metrics_ledger.csv and figures, ignore bulky intermediates
+outputs/predictions/
+outputs/*.tmp.json
+
+# OS
+.DS_Store
+Thumbs.db
