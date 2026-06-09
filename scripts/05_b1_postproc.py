@@ -35,7 +35,7 @@ from labelmap import OPF_TO_SPEC, SPEC_LABELS  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 GOLD = ROOT / "data" / "eval" / "eval_300.jsonl"
 IOU_THRESH = 0.5
-DIRECT = {"PERSON", "ADDRESS", "PHONE", "EMAIL", "DATE", "ID"}
+DIRECT = {"PERSON", "ADDRESS", "PHONE", "EMAIL", "ID"}  # DATE は準識別子 (#39)
 
 Span = tuple[str, int, int]
 

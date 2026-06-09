@@ -110,13 +110,13 @@ GLiNER
 | ADDRESS | 東京都千代田区                | |
 | PHONE   | 090-XXXX-XXXX               | |
 | EMAIL   | xxx@example.com             | |
-| DATE    | 2025/01/01 / 2025年1月3日      | |
 | ID      | 患者番号 / 被保険者番号 / 受付番号 / 会員番号 | 旧 業務識別子4種を統合 |
 
 ### 準識別子
 
 | ラベル          | 例                | 統合元 |
 | ------------ | ----------------- | --- |
+| DATE         | 2025/01/01 / 2025年1月3日 | 2026-06-09 直接→準識別子に再分類(#39)。日付単独では直接特定せず再特定に寄与 |
 | AGE          | 98歳              | |
 | REGION       | ○○市              | |
 | OCCUPATION   | 医師              | |
@@ -294,7 +294,7 @@ Privacy Filter
 | PII Precision | 85%以上 |
 | 主要ラベル Recall / Precision | 90% / 85%以上 |
 
-> Recall の主対象は直接識別子(PERSON/ADDRESS/PHONE/EMAIL/DATE/ID)。準識別子(AGE/REGION/OCCUPATION/ORGANIZATION)は参考測定。**F1は用いない**（2026-06-08改訂 #24）。
+> Recall の主対象は直接識別子(PERSON/ADDRESS/PHONE/EMAIL/ID)。準識別子(DATE/AGE/REGION/OCCUPATION/ORGANIZATION)は参考測定（DATE は 2026-06-09 に直接→準識別子へ再分類 #39）。**F1は用いない**（2026-06-08改訂 #24）。
 
 ---
 

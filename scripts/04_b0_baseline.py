@@ -33,7 +33,7 @@ ROOT = Path(__file__).resolve().parent.parent
 GOLD = ROOT / "data" / "eval" / "eval_300.jsonl"
 IOU_THRESH = 0.5
 SPLIT = "test"
-DIRECT = {"PERSON", "ADDRESS", "PHONE", "EMAIL", "DATE", "ID"}  # OPF-mappable (spec §9)
+DIRECT = {"PERSON", "ADDRESS", "PHONE", "EMAIL", "ID"}  # direct identifiers (spec §9; DATE は準識別子 #39)
 
 Span = tuple[str, int, int]  # (spec_label, start, end)
 
@@ -95,7 +95,19 @@ def load_gold():
 
 
 def opf_predictions(texts: list[str]):
-    """Run stock OPF and return {text: [spec spans]}; second value = elapsed sec."""
+    """Run stock OPF and return {text: [spec spans]}; second value = elapsed sec.
+
+    Reuses the per-split cache written by scripts/05 (`data/eval/opf_raw_<split>.jsonl`)
+    when present, so re-scoring (e.g. after a label-set change) needs no re-inference.
+    """
+    cache = ROOT / "data" / "eval" / f"opf_raw_{SPLIT}.jsonl"
+    if cache.exists():
+        out: dict[str, list[Span]] = {}
+        for line in cache.read_text(encoding="utf-8").splitlines():
+            r = json.loads(line)
+            out[r["text"]] = [tuple(s) for s in r["spans"]]
+        print(f"(using cached OPF preds: {cache.name})")
+        return out, 0.0
     with tempfile.TemporaryDirectory() as td:
         gold_in = Path(td) / "test.jsonl"
         with gold_in.open("w", encoding="utf-8") as f:
@@ -120,6 +132,9 @@ def opf_predictions(texts: list[str]):
                 for s, e in coords:
                     spans.append((spec, s, e))
             out[rec["text"]] = spans
+        with cache.open("w", encoding="utf-8") as f:  # cache for re-scoring
+            for t, spans in out.items():
+                f.write(json.dumps({"text": t, "spans": spans}, ensure_ascii=False) + "\n")
         return out, elapsed
 
 
