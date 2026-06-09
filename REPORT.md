@@ -260,4 +260,4 @@ uv run python scripts/plot_progression.py                 # 図を再生成
 - [1] OpenAI Privacy Filter. https://github.com/openai/privacy-filter （本評価は `opf` 0.1.0 / コミット `f7f00ca`・2026-04-22 取得）
 - [2] OPF CLI・学習/評価の調査メモ: [`docs/findings-opf-cli.md`](docs/findings-opf-cli.md)
 - [3] 実験計画・仕様: [`docs/verification-plan.md`](docs/verification-plan.md) ／ [`docs/spec.txt`](docs/spec.txt)
-- [4] OpenAI Privacy Filter Model Card（評価条件・Table 7 多言語性能）: [`docs/OpenAI-Privacy-Filter-Model-Card.pdf`](docs/OpenAI-Privacy-Filter-Model-Card.pdf)
+- [4] OpenAI Privacy Filter Model Card（評価条件・Table 7 多言語性能）. https://cdn.openai.com/pdf/c66281ed-b638-456a-8ce1-97e9f5264a90/OpenAI-Privacy-Filter-Model-Card.pdf （ローカル写し: [`docs/OpenAI-Privacy-Filter-Model-Card.pdf`](docs/OpenAI-Privacy-Filter-Model-Card.pdf)）
