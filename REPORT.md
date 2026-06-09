@@ -12,7 +12,7 @@
 ## 0. エグゼクティブサマリ
 
 - **現在地: B0（素OPF）測定完了**。合成評価300件（#5、医療/自治体/その他 各100、dev75/test225 に層化 #20）を用い、**test 225件**で素 OPF を実測（§2）。
-- 🔎 **素 OPF B0（直接識別子・untyped, IoU≥0.5）**: **R=0.57 / P=0.77**（成功基準 R≥90%・P≥85% に未達）。**強い**: PHONE(R=1.0)・ID(0.89)・EMAIL(0.86)＝構造化PII。**弱い**: **PERSON R=0.38**（最大ラベル, 境界過延長）・**DATE R=0.29**（和暦/略記）・ADDRESS P=0.48。準識別子(AGE/REGION/OCC/ORG)は**OPF設計上対象外で R=0**。詳細 → [OPF ページ](methods/opf.md)。
+- 🔎 **B0→B1（直接識別子・untyped, IoU≥0.5, test225件）**: **R 0.57→0.70 / P 0.77→0.86**。B1 後処理は OPF 出力の整形のみで、**DATE 0.29→0.99**（和暦/略記の正規表現）・PERSON 境界整形（P 0.65→0.85）が効いた。**強い**: PHONE 1.0・ID 0.89・EMAIL 0.86。**残る課題**: PERSON Recall 0.49（OPF が2人目以降を非検出＝素モデルの上限）・ADDRESS P 0.48。準識別子(AGE/REGION/OCC/ORG)は**OPF設計上対象外で R=0**→ B2 で追加学習。詳細 → [OPF ページ](methods/opf.md)。
 - 🔎 **モデル比較（パイロット実測 §3）**: 同一gold・同一マッチャ(IoU≥0.5)で OPF vs GiNZA を計測。**相補性が実数で確認**——OPFは PHONE/EMAIL(R=1.0)・ID等の**構造化PII**に強く、GiNZAは PERSON(0.94)・AGE/REGION/DATE(1.0)等の**人名・準識別子**に強い。OPFの境界過延長(PERSON R=0.41)は B1 の改善対象。用途で使い分け（アンサンブルは対象外 #18）。
 - 📘 **確定事実**: OPF は **LoRA 非対応＝フルFT のみ**。10ラベルは `--label-space-json` で直接学習可。指標は `detection.span.*`/`by_class.<label>.span.*` を台帳へ写像 [\[2\]](#ref2)。
 
@@ -39,17 +39,16 @@ flowchart LR
 
 | Stage | 説明 | Recall | Precision | 漏れ率 | 誤検出率 |
 |---|---|---:|---:|---:|---:|
-| B0 | 素モデル | **0.57** | **0.77** | 0.43 | 0.23 |
-| B1 | 後処理・正規表現 | — | — | — | — |
+| B0 | 素モデル | 0.57 | 0.77 | 0.43 | 0.23 |
+| B1 | 後処理・正規表現 | **0.70** | **0.86** | 0.30 | 0.14 |
 | B2 | 日本語追加学習 | — | — | — | — |
 
-ドメイン別(B0, 直接識別子 untyped): 医療 R=0.59/P=0.78・その他 R=0.65/P=0.76・自治体 R=0.51/P=0.75。
-全10ラベル untyped では R=0.38（OPF が構造的に出せない準識別子 4種で分母が増えるため）。
+ラベル別 typed Recall（B0→B1）: **DATE 0.29→0.99**（和暦/略記の正規表現で回収, P=0.97）・**PERSON 0.38→0.49**（境界整形で P=0.65→0.85 も改善）。PHONE 1.00 / ID 0.89 / EMAIL 0.86 / ADDRESS 0.81(P=0.48) は据え置き。AGE・REGION・OCC・ORG は **0**（OPF対象外 → B2 で追加学習）。
 
-ラベル別(B0, typed Recall): PHONE **1.00** / ID **0.89** / EMAIL **0.86** / ADDRESS 0.81(P=0.48) / PERSON **0.38** / DATE **0.29** / AGE・REGION・OCC・ORG **0**(OPF対象外)。
-→ **B1 の主対象は PERSON（境界後処理）と DATE（和暦/略記の正規表現）**。PHONE/EMAIL/ID は既に飽和。
+🔎 **B1 の設計と限界**: 後処理は **OPF 自身の出力 category の整形に限定**（PERSON 境界の汎用整形＋DATE の JP 書式補完）。AGE/REGION 等の正規表現は加えていない（OPF が扱わない category であり、追加は実質アンサンブル #18／準識別子拡張は B2 の役割）。PERSON 残差は OPF が2人目以降を**そもそも非検出**な分で、後処理では作れない＝素モデルの JP 人名再現率の上限。**合成データ上の上限性能**である点に留意（#20）。
 
-*（B1 計測後に `figures/score_progression.png` を掲載）*
+![score progression](figures/score_progression.png)
+**図0**: B0→B1 の Recall/Precision 進捗（untyped 全ラベル, test 225件）。
 
 ---
 
