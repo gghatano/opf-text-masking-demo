@@ -15,6 +15,8 @@ surfaces. Every span is asserted to satisfy text[start:end] == value.
 
 Output: data/eval/eval_300.jsonl
   schema: {"text", "label":[{"category","start","end"}], "info":{id,domain,subtype,split}}
+  split (#20): each domain is stratified into dev (B1 threshold tuning only) and
+  test (the final eval set, touched once). --n-dev controls the per-domain dev size.
 
 The 10-label scheme (spec.txt §5): PERSON ADDRESS PHONE EMAIL DATE ID
 (direct) / AGE REGION OCCUPATION ORGANIZATION (quasi).
@@ -270,12 +272,15 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=OUT_DEFAULT)
     ap.add_argument("--seed", type=int, default=20260609)
     ap.add_argument("--n-per-domain", type=int, default=100)
+    ap.add_argument("--n-dev", type=int, default=25,
+                    help="docs per domain assigned to the dev split (#20: B1 "
+                         "threshold tuning uses dev only; test is the final set).")
     args = ap.parse_args()
 
     rng = random.Random(args.seed)
     args.out.parent.mkdir(parents=True, exist_ok=True)
 
-    records, label_counts, domain_counts = [], Counter(), Counter()
+    records, label_counts, domain_counts, split_counts = [], Counter(), Counter(), Counter()
     seen_texts: set[str] = set()
     idx = 0
     for domain, builders in TEMPLATES.items():
@@ -291,15 +296,17 @@ def main() -> None:
                 continue
             seen_texts.add(text)
             validate(text, labels)
+            split = "dev" if made < args.n_dev else "test"  # #20: dev for tuning, test final
             records.append({
                 "text": text,
                 "label": labels,
                 "info": {"id": f"eval_{idx:04d}", "domain": domain,
-                         "subtype": subtype, "split": "eval"},
+                         "subtype": subtype, "split": split},
             })
             for sp in labels:
                 label_counts[sp["category"]] += 1
             domain_counts[domain] += 1
+            split_counts[(domain, split)] += 1
             made += 1
             idx += 1
 
@@ -309,6 +316,7 @@ def main() -> None:
 
     print(f"wrote {len(records)} records to {args.out}")
     print("by domain :", dict(domain_counts))
+    print("by split  :", {f"{d}/{s}": n for (d, s), n in sorted(split_counts.items())})
     print("by label  :", dict(sorted(label_counts.items(), key=lambda kv: -kv[1])))
     print(f"total spans: {sum(label_counts.values())}")
 
