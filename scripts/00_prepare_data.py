@@ -77,6 +77,36 @@ ID_KINDS = [  # (前置きラベル, 値生成キー)
     ("注文番号", "ORD"), ("契約者番号", "C"), ("整理番号", "num8"),
 ]
 
+# --- TRAIN-only pools (#6/#20): surface forms DISJOINT from the eval pools above,
+#     so the B2 fine-tune cannot memorise eval entities (leakage prevention).
+#     Random-valued fields (phone/email/date/ID numbers) differ by construction.
+TRAIN_POOLS = {
+    "SURNAMES": [
+        "大野", "菅原", "千葉", "堀", "杉山", "関", "横山", "増田", "小川", "武田",
+        "上田", "阿部", "福田", "太田", "平野", "河野", "野口", "森田", "中野", "原田",
+        "和田", "石田", "柴田", "酒井", "工藤", "桜井", "大塚", "金子", "藤本", "今井",
+    ],
+    "GIVEN_F": ["恵", "香織", "直美", "美穂", "久美子", "真由美", "智子", "裕子", "結衣", "七海"],
+    "GIVEN_M": ["修", "哲也", "和也", "健太", "雄一", "浩二", "隆", "学", "達也", "勇"],
+    "FOREIGN_NAMES": ["チャン・ティ・ハ", "パク・ジホ", "ウィリアム・ブラウン", "アフメド・ハッサン"],
+    "ADDR_BASE": [
+        "静岡県静岡市葵区", "新潟県新潟市中央区", "岡山県岡山市北区", "熊本県熊本市中央区",
+        "長野県長野市", "栃木県宇都宮市", "三重県津市", "群馬県前橋市", "岐阜県岐阜市",
+        "滋賀県大津市", "山口県山口市", "愛媛県松山市",
+    ],
+    "REGIONS": [
+        "静岡市", "新潟市", "岡山市北区", "熊本市", "長野市", "宇都宮市", "津市",
+        "前橋市", "岐阜市", "大津市", "松山市", "那覇市", "青葉区", "緑区",
+    ],
+    "HOSPITALS": ["県立中央病院", "七尾総合クリニック", "あさひ記念病院", "共愛会病院",
+                  "市民総合医療センター", "若葉台リハビリ病院", "みなと診療所"],
+    "COMPANIES": ["東洋製作所株式会社", "関西商会株式会社", "ひかり工業株式会社",
+                  "中央データ株式会社", "さくら運輸株式会社"],
+    "SCHOOLS": ["北陸大学", "県立南高校", "市立第五中学校", "あおば幼稚園", "信州工科大学"],
+    "GOV_OFFICES": ["名古屋市役所 福祉課", "神戸市役所 市民課", "札幌市中央区役所 保険課",
+                    "福岡市役所 介護保険課"],
+}
+
 
 def jp_phone(rng: random.Random) -> str:
     kind = rng.choice(["mobile", "fixed", "free"])
@@ -267,58 +297,91 @@ def validate(text: str, labels: list[dict]) -> None:
         prev_end = sp["end"]
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--out", type=Path, default=OUT_DEFAULT)
-    ap.add_argument("--seed", type=int, default=20260609)
-    ap.add_argument("--n-per-domain", type=int, default=100)
-    ap.add_argument("--n-dev", type=int, default=25,
-                    help="docs per domain assigned to the dev split (#20: B1 "
-                         "threshold tuning uses dev only; test is the final set).")
-    args = ap.parse_args()
+DATA_DIR = OUT_DEFAULT.parent.parent  # .../data
 
-    rng = random.Random(args.seed)
-    args.out.parent.mkdir(parents=True, exist_ok=True)
 
-    records, label_counts, domain_counts, split_counts = [], Counter(), Counter(), Counter()
-    seen_texts: set[str] = set()
+def generate(rng, n_per_domain, split_of):
+    """Yield records across domains; split_of(domain, made_index) -> split label."""
+    records, seen = [], set()
     idx = 0
     for domain, builders in TEMPLATES.items():
-        made = 0
-        guard = 0
-        while made < args.n_per_domain:
+        made = guard = 0
+        while made < n_per_domain:
             guard += 1
-            if guard > args.n_per_domain * 50:
-                raise RuntimeError(f"could not reach {args.n_per_domain} unique docs for {domain}")
+            if guard > n_per_domain * 50:
+                raise RuntimeError(f"could not reach {n_per_domain} unique docs for {domain}")
             subtype, parts = rng.choice(builders)(rng)
             text, labels = build(parts)
-            if text in seen_texts:  # dedup (leakage/duplication guard, #20)
+            if text in seen:  # dedup (leakage/duplication guard, #20)
                 continue
-            seen_texts.add(text)
+            seen.add(text)
             validate(text, labels)
-            split = "dev" if made < args.n_dev else "test"  # #20: dev for tuning, test final
-            records.append({
-                "text": text,
-                "label": labels,
-                "info": {"id": f"eval_{idx:04d}", "domain": domain,
-                         "subtype": subtype, "split": split},
-            })
-            for sp in labels:
-                label_counts[sp["category"]] += 1
-            domain_counts[domain] += 1
-            split_counts[(domain, split)] += 1
-            made += 1
-            idx += 1
+            records.append({"text": text, "label": labels,
+                            "info": {"id": f"{idx:04d}", "domain": domain,
+                                     "subtype": subtype, "split": split_of(domain, made)}})
+            made += 1; idx += 1
+    return records
 
-    with args.out.open("w", encoding="utf-8") as f:
-        for rec in records:
-            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
-    print(f"wrote {len(records)} records to {args.out}")
-    print("by domain :", dict(domain_counts))
-    print("by split  :", {f"{d}/{s}": n for (d, s), n in sorted(split_counts.items())})
-    print("by label  :", dict(sorted(label_counts.items(), key=lambda kv: -kv[1])))
-    print(f"total spans: {sum(label_counts.values())}")
+def _stats(records):
+    label_c, dom_c, split_c = Counter(), Counter(), Counter()
+    for r in records:
+        dom_c[r["info"]["domain"]] += 1
+        split_c[(r["info"]["domain"], r["info"]["split"])] += 1
+        for sp in r["label"]:
+            label_c[sp["category"]] += 1
+    print("  by domain :", dict(dom_c))
+    print("  by split  :", {f"{d}/{s}": n for (d, s), n in sorted(split_c.items())})
+    print("  by label  :", dict(sorted(label_c.items(), key=lambda kv: -kv[1])))
+    print(f"  total spans: {sum(label_c.values())}")
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--target", choices=["eval", "train"], default="eval",
+                    help="eval=300-doc test set (#5); train=B2 fine-tune set (#6, "
+                         "disjoint entity pools).")
+    ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument("--seed", type=int, default=None)
+    ap.add_argument("--n-per-domain", type=int, default=None)
+    ap.add_argument("--n-dev", type=int, default=25,
+                    help="eval: docs/domain for the dev split (#20).")
+    ap.add_argument("--val-frac", type=float, default=0.1,
+                    help="train: fraction of docs held out for validation.")
+    args = ap.parse_args()
+
+    if args.target == "train":
+        for k, v in TRAIN_POOLS.items():     # swap to disjoint train-only surfaces
+            globals()[k] = v
+        seed = args.seed if args.seed is not None else 20260610
+        n_per = args.n_per_domain if args.n_per_domain is not None else 250  # ~750 total
+        rng = random.Random(seed)
+        n_val = round(n_per * args.val_frac)
+        recs = generate(rng, n_per, lambda d, m: "val" if m < n_val else "train")
+        out_dir = (args.out or (DATA_DIR / "train" / "train.jsonl")).parent
+        out_dir.mkdir(parents=True, exist_ok=True)
+        for split, fname in [("train", "train.jsonl"), ("val", "val.jsonl")]:
+            rows = [r for r in recs if r["info"]["split"] == split]
+            with (out_dir / fname).open("w", encoding="utf-8") as f:
+                for r in rows:  # opf train reads text+label; drop info to be safe
+                    f.write(json.dumps({"text": r["text"], "label": r["label"]},
+                                       ensure_ascii=False) + "\n")
+            print(f"wrote {len(rows)} records to {out_dir / fname}")
+        _stats(recs)
+    else:
+        seed = args.seed if args.seed is not None else 20260609
+        n_per = args.n_per_domain if args.n_per_domain is not None else 100
+        out = args.out or OUT_DEFAULT
+        out.parent.mkdir(parents=True, exist_ok=True)
+        rng = random.Random(seed)
+        recs = generate(rng, n_per, lambda d, m: "dev" if m < args.n_dev else "test")
+        for r in recs:
+            r["info"]["id"] = "eval_" + r["info"]["id"]
+        with out.open("w", encoding="utf-8") as f:
+            for r in recs:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        print(f"wrote {len(recs)} records to {out}")
+        _stats(recs)
 
 
 if __name__ == "__main__":

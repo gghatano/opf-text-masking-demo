@@ -1,0 +1,15 @@
+{
+  "span_class_names": [
+    "O",
+    "PERSON",
+    "ADDRESS",
+    "PHONE",
+    "EMAIL",
+    "DATE",
+    "ID",
+    "AGE",
+    "REGION",
+    "OCCUPATION",
+    "ORGANIZATION"
+  ]
+}
