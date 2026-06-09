@@ -50,3 +50,6 @@ b1a22cb8,2026-06-08,compare,A-OPF,stock,ALL,ORGANIZATION,,0.0,,1.0,,,,"typed, n_
 104993a7,2026-06-09,B1,A-OPF,b1_postproc,ALL,REGION,,0.0,,1.0,,,20260609,"typed, IoU>=0.5, split=test, n_gold=102"
 104993a7,2026-06-09,B1,A-OPF,b1_postproc,ALL,OCCUPATION,,0.0,,1.0,,,20260609,"typed, IoU>=0.5, split=test, n_gold=101"
 104993a7,2026-06-09,B1,A-OPF,b1_postproc,ALL,ORGANIZATION,,0.0,,1.0,,,20260609,"typed, IoU>=0.5, split=test, n_gold=113"
+b737c5d4,2026-06-09,B0,A-OPF,stock,OPF6,OPF6-untyped(token),0.7723,0.8217,0.7962,,,,20260609,"OpenAI Model Card alignment (Table7=R0.866/P0.897), split=test, char-token proxy"
+b737c5d4,2026-06-09,B0,A-OPF,stock,OPF6,OPF6-typed(token),0.7038,0.7488,0.7256,,,,20260609,"OpenAI Model Card alignment (Table7=R0.866/P0.897), split=test, char-token proxy"
+b737c5d4,2026-06-09,B0,A-OPF,stock,OPF6,OPF6-untyped(span),0.7674,0.5696,0.6539,,,,20260609,"OpenAI Model Card alignment (Table7=R0.866/P0.897), split=test, char-token proxy"
