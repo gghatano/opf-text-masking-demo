@@ -18,4 +18,10 @@
 - done: OPF スループット計測(~11s load + 0.26s/文)→3条件×102文を ~83s で完走(timebox 内)。前置 R0.824 / 後置 R0.735 / 無し R0.716。台帳に ABL 行・REPORT §3.8・htmls 再ビルド。data/ablation は git-ignored。
 - 裏取り: キャッシュ予測を目視確認、pred span が gold 値に一致。DATE が全条件で低い(B0 DATE R0.29 と整合)。3条件は同一値・同一シードで枠のみ変化。
 - decided: 効果量(前置+0.11)は Model Card(+0.28)より小=短文・少数・天井効果のため、と正直に記載。PR 作成→マージ。次は T3 (B2 学習スモーク)。
-- PR/Issue: #46
+- PR/Issue: #46 / PR #50 (merged e5e294c)
+
+## 2026-06-09T19:05 cycle 3
+- now: T3 B2 学習スモーク。
+- blocked: **BLOCKED**。2 つの blocker。①labels_ja10.json(span_class_names のみ)が効かず head が 41 ラベルで再構築(exact=1/fallback=40)=#12 の宿題の核心。②CPU 学習が非現実的: 既定スレッドで segfault(exit139)、OMP_NUM_THREADS=1+batch2 でも ~19GB 占有・4 micro-batch 中 1 を 13 分でも未完(848s で打ち切り・プロセス kill)。本学習は budget(4h)を桁違いに超過。
+- decided: 部分学習物で誤った B2 を出さない(§0)。GPU 使用可否・ラベル空間設計は人間判断(§5)→ #12 にコメントで記録。スモーク一時物は削除。T3 はコード成果物なし=PR なし。次は T4 (#45 PII-Masking-300k, ベストエフォート)。
+- PR/Issue: #12 (escalation comment)
